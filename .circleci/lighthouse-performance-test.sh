@@ -161,4 +161,4 @@ else
 #                    https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/$CIRCLE_BRANCH  >/dev/null
 #    fi
 #
-#fi
+fi
