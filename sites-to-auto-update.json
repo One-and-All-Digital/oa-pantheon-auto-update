@@ -3,6 +3,7 @@
     "SITE_UUID": "492e1964-3f2c-4133-8af2-ec44cfe1cc55",
     "SITE_NAME": "oneandall",
     "CREATE_BACKUPS": 1,
+    "USE_UPSTREAM": 0,
     "RECREATE_MULTIDEV": 1,
     "LIVE_URL": "https://oneandall.com/"
   }

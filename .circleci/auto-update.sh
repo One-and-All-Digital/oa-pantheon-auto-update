@@ -50,37 +50,43 @@ fi
 # Create the multidev environment
 echo -e "\nCreating the ${MULTIDEV} multidev environment for ${SITE_NAME}..."
 terminus multidev:create $SITE_NAME.live $MULTIDEV
-# check for upstream updates
-echo -e "\nChecking for upstream updates on the ${MULTIDEV} multidev for ${SITE_NAME}..."
-# the output goes to stderr, not stdout
-UPSTREAM_UPDATES="$(terminus upstream:updates:list ${SITE_UUID}.${MULTIDEV}  --format=list  2>&1)"
 
-UPDATES_APPLIED=false
-
-if [[ ${UPSTREAM_UPDATES} == *"no available updates"* ]]
+# Drive to upstream based on parameter
+if [[ "$USE_UPSTREAM" == "1"]]
 then
-    # no upstream updates available
-    echo -e "\nNo upstream updates found on the ${MULTIDEV} multidev for ${SITE_NAME}..."
-else
-    # making sure the multidev is in git mode
-    echo -e "\nSetting the ${MULTIDEV} multidev to git mode"
-    terminus connection:set $SITE_UUID.$MULTIDEV git
+	# check for upstream updates
+	echo -e "\nChecking for upstream updates on the ${MULTIDEV} multidev for ${SITE_NAME}..."
+	# the output goes to stderr, not stdout
+	UPSTREAM_UPDATES="$(terminus upstream:updates:list ${SITE_UUID}.${MULTIDEV}  --format=list  2>&1)"
 
-    # apply WordPress upstream updates
-    echo -e "\nApplying upstream updates on the ${MULTIDEV} multidev for ${SITE_NAME}..."
-    terminus upstream:updates:apply $SITE_UUID.$MULTIDEV --yes --updatedb --accept-upstream
-    UPDATES_APPLIED=true
+	UPDATES_APPLIED=false
 
-    if [[ ${CMS_FRAMEWORK} == "wordpress" ]]
-    then
-        terminus -n wp $SITE_UUID.$MULTIDEV -- core update-db
-    fi
+	if [[ ${UPSTREAM_UPDATES} == *"no available updates"* ]]
+	then
+		# no upstream updates available
+		echo -e "\nNo upstream updates found on the ${MULTIDEV} multidev for ${SITE_NAME}..."
+	else
+		# making sure the multidev is in git mode
+		echo -e "\nSetting the ${MULTIDEV} multidev to git mode"
+		terminus connection:set $SITE_UUID.$MULTIDEV git
+
+		# apply WordPress upstream updates
+		echo -e "\nApplying upstream updates on the ${MULTIDEV} multidev for ${SITE_NAME}..."
+		terminus upstream:updates:apply $SITE_UUID.$MULTIDEV --yes --updatedb --accept-upstream
+		UPDATES_APPLIED=true
+
+		if [[ ${CMS_FRAMEWORK} == "wordpress" ]]
+		then
+			terminus -n wp $SITE_UUID.$MULTIDEV -- core update-db
+		fi
     
-    if [[ ${CMS_FRAMEWORK} == "drupal" ]]
-    then
-        terminus -n drush $SITE_UUID.$MULTIDEV -- updatedb
-    fi
+		if [[ ${CMS_FRAMEWORK} == "drupal" ]]
+		then
+			terminus -n drush $SITE_UUID.$MULTIDEV -- updatedb
+		fi
     
+	fi
+
 fi
 
 # making sure the multidev is in SFTP mode
@@ -95,6 +101,28 @@ echo -e "\nChecking for ${CMS_CONTRIB} updates on the ${MULTIDEV} multidev for $
 # check for WordPress plugin updates
 if [[ ${CMS_FRAMEWORK} == "wordpress" ]]
 then
+	# Start by updating WP Core
+	CORE_UPDATES=$(terminus -n wp ${SITE_UUID}.${MULTIDEV} -- core update)
+
+	echo $CORE_UPDATES
+    if [[ "$CORE_UPDATES" == "0" ]]
+    then
+        # no WordPress plugin or Drupal module updates found
+        echo -e "\nNo ${CMS_CONTRIB} core updates found on the ${MULTIDEV} multidev for $SITE_NAME..."
+    else
+        # update WordPress plugins or Drupal modules
+        echo -e "\nUpdating ${CMS_CONTRIB} core on the ${MULTIDEV} multidev for $SITE_NAME..."
+        terminus -n wp $SITE_UUID.$MULTIDEV -- plugin update --all
+
+        # wake the site environment before committing code
+        echo -e "\nWaking the ${MULTIDEV} multidev..."
+        terminus env:wake $SITE_UUID.$MULTIDEV
+
+        # committing updated WordPress plugins or Drupal modules
+        echo -e "\nCommitting ${CMS_CONTRIB} core updates on the ${MULTIDEV} multidev for $SITE_NAME..."
+        terminus env:commit $SITE_UUID.$MULTIDEV --force --message="update ${CMS_CONTRIB} core"
+        UPDATES_APPLIED=true
+    fi
 
     PLUGIN_UPDATES=$(terminus -n wp ${SITE_UUID}.${MULTIDEV} -- plugin list --update=available --format=count)
 

@@ -4,6 +4,7 @@
 while IFS= read -r SITE_UUID &&
 	IFS= read -r SITE_NAME &&
 	IFS= read -r CREATE_BACKUPS &&
+	IFS= read -r USE_UPDATES &&
 	IFS= read -r RECREATE_MULTIDEV &&
 	IFS= read -r LIVE_URL; do
 	
@@ -20,9 +21,10 @@ while IFS= read -r SITE_UUID &&
 				--data build_parameters[SITE_NAME]=$SITE_NAME \
 				--data build_parameters[SITE_UUID]=$SITE_UUID \
 				--data build_parameters[CREATE_BACKUPS]=$CREATE_BACKUPS \
+				--data build_parameters[USE_UPDATES]=$USE_UPDATES \
 				--data build_parameters[RECREATE_MULTIDEV]=$RECREATE_MULTIDEV \
 				--data build_parameters[LIVE_URL]=$LIVE_URL \
 				--data revision=$CIRCLE_SHA1 \
 				https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/tree/$CIRCLE_BRANCH  >/dev/null
 
-done < <(jq -r '.[] | (.SITE_UUID, .SITE_NAME, .CREATE_BACKUPS, .RECREATE_MULTIDEV, .LIVE_URL)' < "$(dirname "$pwd")/sites-to-auto-update.json")
+done < <(jq -r '.[] | (.SITE_UUID, .SITE_NAME, .CREATE_BACKUPS, .USE_UPDATES, .RECREATE_MULTIDEV, .LIVE_URL)' < "$(dirname "$pwd")/sites-to-auto-update.json")
