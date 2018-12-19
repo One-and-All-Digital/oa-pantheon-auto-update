@@ -52,7 +52,7 @@ echo -e "\nCreating the ${MULTIDEV} multidev environment for ${SITE_NAME}..."
 terminus multidev:create $SITE_NAME.live $MULTIDEV
 
 # Drive to upstream based on parameter
-if [[ "$USE_UPSTREAM" == "1"]]
+if [[ "$USE_UPSTREAM" == "1" ]]
 then
 	# check for upstream updates
 	echo -e "\nChecking for upstream updates on the ${MULTIDEV} multidev for ${SITE_NAME}..."
